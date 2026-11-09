@@ -13,6 +13,42 @@ npm run dev
 
 Open the Local URL printed by Vite. Use `npm run build` for a production build and `npm run preview` to serve it.
 
+The app uses the `/algorithm-arcade/` base path in development and production. Open the URL with that suffix, such as `http://127.0.0.1:5173/algorithm-arcade/`.
+
+## GitHub Pages deployment
+
+Production URL: [Algorithm Arcade](https://nv2rdwzksh-eng.github.io/algorithm-arcade/).
+
+GitHub Pages must serve the compiled `dist/` directory. Publishing the repository root serves the development `index.html`, which references `/src/main.ts` and cannot run directly on Pages. Vite's `base: "/algorithm-arcade/"` ensures compiled JavaScript and CSS URLs include the repository prefix.
+
+### One-time repository setup and publishing
+
+These are manual steps; adding the local configuration does not push changes or change repository settings.
+
+1. Review and commit `vite.config.ts`, `package.json`, `scripts/verify-pages-build.mjs`, `.github/workflows/deploy-pages.yml`, and this README, then push the commit to `main`.
+2. In **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions**. Do not choose the repository root or a source branch folder for publishing.
+3. Open **Actions → Deploy to GitHub Pages**. The push to `main` triggers the workflow. If it ran before the Pages source was configured, rerun it or use **Run workflow** on `main`.
+4. If the `github-pages` environment requires approval, approve the deployment. Its branch rules must allow `main`.
+5. Wait for the build and deployment jobs to succeed, then open the production URL above. A hard refresh can clear previously cached source HTML.
+
+The workflow installs dependencies with `npm ci`, runs unit tests, runs the type-checked production build, verifies generated asset paths, and uploads **only `dist/`** with `upload-pages-artifact`. A separate deployment job waits for that artifact and uses `deploy-pages`. Actions are pinned to commit SHAs. Node.js 24 is used in CI.
+
+The build has read-only repository access. Only the deployment job receives `pages: write` and `id-token: write`, with the `github-pages` environment and deployment URL. It uses GitHub's built-in token; no personal access token or `gh-pages` branch is needed. Pages deployments are serialized so active deployments are not interrupted.
+
+### Verify the production build locally
+
+```sh
+npm ci
+npm test
+npm run build
+npm run verify:pages
+npm run preview
+```
+
+Open `http://127.0.0.1:4173/algorithm-arcade/`. The verifier checks that built HTML references compiled JS and CSS, every local asset URL starts with `/algorithm-arcade/`, each referenced file exists in `dist/`, and no `/src/` URL remains. In the browser's Network panel, compiled assets should return 200 under `/algorithm-arcade/assets/`.
+
+If the repository name changes or a custom domain is introduced, update the Vite base path and the verifier's expected prefix together. See [Vite's Pages deployment guide](https://vite.dev/guide/static-deploy.html#github-pages) and [GitHub's custom workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
 ## Verify
 
 ```sh
